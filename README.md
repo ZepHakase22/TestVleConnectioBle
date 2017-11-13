@@ -14,5 +14,5 @@ Clone the repository and open in Android Studio.
 Under the project directory run 
 
 ```
-    adb install build/outputs/apk/debug
+    adb install build/outputs/apk/debug/TestVleBleConnection-debug.apk
 ```
