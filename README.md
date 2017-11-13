@@ -11,4 +11,8 @@ Clone the repository and open in Android Studio.
 
 ## Installation from command line
 
-Under the project directory run adb install
+Under the project directory run 
+
+```
+    adb install build/outputs/apk/debug
+```
