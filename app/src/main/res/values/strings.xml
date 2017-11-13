@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Test Ble Connection</string>
+    <string name="zep_welcome">Welcome to the Zep Ble World</string>
+    <string name="scan">Scan</string>
+    <string name="stop_scan">Stop Scanning</string>
+    <string name="connect">Connect to device with index:</string>
+    <string name="disconnect">Disconnect from device</string>
+</resources>
