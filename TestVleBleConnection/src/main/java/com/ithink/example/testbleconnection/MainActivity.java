@@ -23,6 +23,7 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Button;
@@ -117,17 +118,36 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(requestCode==REQUEST_ENABLE_BT && resultCode==RESULT_OK) {
-            if (Build.VERSION.SDK_INT >= 21)
-                btScanner=btAdapter.getBluetoothLeScanner();
             connectToDevice.setVisibility(View.VISIBLE);
             startScanningButton.setVisibility(View.VISIBLE);
+            if(Build.VERSION.SDK_INT >=23 ) {
+                // Make sure we have access coarse location enabled, if not, prompt the user to enable it
+                if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    final AlertDialog.Builder builder=new AlertDialog.Builder(this);
+                    builder.setTitle("This app needs location access");
+                    builder.setMessage("Please grant location access so this app can detect peripherals.");
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            if(Build.VERSION.SDK_INT >=23)
+                                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+                        }
+                    });
+                    builder.show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= 21)
+                btScanner=btAdapter.getBluetoothLeScanner();
         }
     }
 
     public void connectToDeviceSelected(View view) {
-        peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
-        int deviceSelected = Integer.parseInt(deviceIndexInput.getText().toString());
-        bluetoothGatt = devicesDiscovered.get(deviceSelected).connectGatt(this, false, btleGattCallback);
+        if(!TextUtils.isEmpty(deviceIndexInput.getText())) {
+            peripheralTextView.append("Trying to connect to device at index: " + deviceIndexInput.getText() + "\n");
+            int deviceSelected=Integer.parseInt(deviceIndexInput.getText().toString());
+            bluetoothGatt=devicesDiscovered.get(deviceSelected).connectGatt(this, false, btleGattCallback);
+        }
     }
     public void disconnectDeviceSelected(View view) {
         peripheralTextView.append("Disconnecting from device\n");
@@ -140,16 +160,21 @@ public class MainActivity extends AppCompatActivity {
         return new ScanCallback() {
 
             @Override
-            public void onScanResult(int callbackType, ScanResult result) {
-                peripheralTextView.append("Index: " + deviceIndex + ", Device Name: " + result.getDevice().getName() + " rssi: " + result.getRssi() + "\n");
-                devicesDiscovered.add(result.getDevice());
-                deviceIndex++;
-                // auto scroll for text view
-                final int scrollAmount=peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
-                // if there is no need to scroll, scrollAmount will be <=0
-                if (scrollAmount > 0) {
-                    peripheralTextView.scrollTo(0, scrollAmount);
-                }
+            public void onScanResult(int callbackType, final ScanResult result) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        peripheralTextView.append("Index: " + deviceIndex + ", Device Name: " + result.getDevice().getName() + " rssi: " + result.getRssi() + "\n");
+                        devicesDiscovered.add(result.getDevice());
+                        deviceIndex++;
+                        // auto scroll for text view
+                        final int scrollAmount=peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
+                        // if there is no need to scroll, scrollAmount will be <=0
+                        if (scrollAmount > 0) {
+                            peripheralTextView.scrollTo(0, scrollAmount);
+                        }
+                    }
+                });
             }
         };
     }
@@ -157,19 +182,24 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter.LeScanCallback getPre21ScanCallBack() {
         return new BluetoothAdapter.LeScanCallback() {
             @Override
-            public void onLeScan(final BluetoothDevice device, int rssi,
+            public void onLeScan(final BluetoothDevice device, final int rssi,
                                  byte[] scanRecord) {
-                String deviceName = device.getName();
+                final String deviceName = device.getName();
 
-                peripheralTextView.append("Index: " + deviceIndex + ", Device Name: " + deviceName + " rssi: " + rssi + "\n");
-                devicesDiscovered.add(device);
-                deviceIndex++;
-                // auto scroll for text view
-                final int scrollAmount=peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
-                // if there is no need to scroll, scrollAmount will be <=0
-                if (scrollAmount > 0) {
-                    peripheralTextView.scrollTo(0, scrollAmount);
-                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        peripheralTextView.append("Index: " + deviceIndex + ", Device Name: " + deviceName + " rssi: " + rssi + "\n");
+                        devicesDiscovered.add(device);
+                        deviceIndex++;
+                        // auto scroll for text view
+                        final int scrollAmount=peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
+                        // if there is no need to scroll, scrollAmount will be <=0
+                        if (scrollAmount > 0) {
+                            peripheralTextView.scrollTo(0, scrollAmount);
+                        }
+                    }
+                });
             }
 
         };
